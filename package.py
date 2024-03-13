@@ -117,7 +117,7 @@ class APIWrapper:
                 origin.push()
 
                 # Trigger the build and deployment process
-                unique_stamp = uuid4()
+                unique_stamp = str(uuid4())
                 build_id = self._trigger_cloud_build(app_name, unique_stamp)
                 self._wait_for_build_completion(build_id)
                 deploy_response = self._deploy_to_cloud_run(app_name, unique_stamp)
@@ -138,6 +138,13 @@ class APIWrapper:
                 raise Exception("No Repo")
             else:
                 raise e
+
+        except PermissionError as e:
+            print(f"Permission error occurred while cleaning up temporary files: {e}")
+            # Handle the permission error gracefully, such as logging or returning an appropriate response
+            return DeploymentResponse(
+                message="Deployment failed due to a permission error while cleaning up temporary files."
+            )
 
     # Method to trigger cloud build and return the build_id
     def _trigger_cloud_build(self, app_name, unique_stamp):
