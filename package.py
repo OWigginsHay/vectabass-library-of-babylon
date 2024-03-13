@@ -1,6 +1,7 @@
 import datetime
 from dis import Instruction
 from typing import Any, Callable, List, TypeVar, get_type_hints
+from uuid import uuid4
 from fastapi import Body, Depends, FastAPI, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.routing import APIRoute
@@ -100,7 +101,9 @@ class APIWrapper:
                         dst_path = os.path.join(temp_dir, item)
                         if os.path.isfile(src_path):
                             shutil.copy(src_path, dst_path)
-                        else:
+                        elif os.path.isdir(src_path):
+                            if os.path.exists(dst_path):
+                                shutil.rmtree(dst_path)  # Remove the existing directory
                             shutil.copytree(src_path, dst_path)
 
                 # Stage all changes
@@ -114,9 +117,10 @@ class APIWrapper:
                 origin.push()
 
                 # Trigger the build and deployment process
-                build_id = self._trigger_cloud_build(app_name)
+                unique_stamp = uuid4()
+                build_id = self._trigger_cloud_build(app_name, unique_stamp)
                 self._wait_for_build_completion(build_id)
-                deploy_response = self._deploy_to_cloud_run(app_name)
+                deploy_response = self._deploy_to_cloud_run(app_name, unique_stamp)
 
                 app_url = self.get_url_for_app(app_name)
                 return DeploymentResponse(
